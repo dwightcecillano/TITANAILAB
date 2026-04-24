@@ -1,6 +1,5 @@
 import streamlit as st
 import os, sys, requests, time
-from ddgs import DDGS  # <--- Updated from duckduckgo_search
 
 # --- THE MOVIEPY 2.1.1 STABLE BRIDGE ---
 try:
