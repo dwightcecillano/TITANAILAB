@@ -4,7 +4,7 @@ import os, sys, requests, time
 # --- THE MOVIEPY 2.1.1 STABLE BRIDGE ---
 try:
     import moviepy
-    from moviepy import ImageClip, AudioFileClip, concatenate_videoclips
+    from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
     # Safe check for effects
     HAS_FX = False
     try:
