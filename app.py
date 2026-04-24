@@ -85,7 +85,7 @@ elif mode == "4. Render & HD Export":
                 with open(p, "wb") as f: f.write(requests.get(url).content)
                 
                 # NATIVE v2.x SYNTAX
-                c = ImageClip(p).with_duration(5)
+                c = ImageClip(p).set_duration(5)
                 
                 # Only apply effects if the import actually worked
                 if HAS_FX:
@@ -100,8 +100,8 @@ elif mode == "4. Render & HD Export":
             if clips:
                 final = concatenate_videoclips(clips, method="compose")
                 if os.path.exists("web_assets/audio.mp3"):
-                    audio = AudioFileClip("web_assets/audio.mp3").with_duration(final.duration)
-                    final = final.with_audio(audio)
+                    audio = AudioFileClip("web_assets/audio.mp3").set_duration(final.duration)
+                    final = final.set_audio(audio)
                 
                 out = f"exports/Final_{int(time.time())}.mp4"
                 final.write_videofile(out, fps=24, codec="libx264", bitrate="8000k")
