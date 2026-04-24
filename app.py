@@ -51,11 +51,17 @@ if st.session_state.mode == "Import":
         st.subheader("🌐 Web Research")
         q = st.text_input("Search for industry assets...", placeholder="e.g. Luxury Real Estate NYC")
         if st.button("Scrape Web"):
-            with DDGS() as ddgs:
-                results = list(ddgs.images(q, max_results=6))
-                for r in results:
-                    st.session_state.timeline.append({"url": r['image'], "duration": 3, "prompt": q})
-            st.success("Assets added to project!")
+            try:
+                with st.spinner("Scraping assets (this may take a moment)..."):
+                    with DDGS() as ddgs:
+                        time.sleep(1)  # Rate limiting
+                        results = list(ddgs.images(q, max_results=6))
+                        for r in results:
+                            st.session_state.timeline.append({"url": r['image'], "duration": 3, "prompt": q})
+                            time.sleep(0.5)  # Delay between results
+                st.success("✓ Assets added to project!")
+            except Exception as e:
+                st.warning(f"⚠️ Rate limited. Please wait 30 seconds and try again. Error: {type(e).__name__}")
 
     with right:
         st.subheader("🤖 AI Generation")
