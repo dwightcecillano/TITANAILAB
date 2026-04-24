@@ -1,5 +1,6 @@
 ﻿streamlit
 moviepy==2.1.1
-ddgs
+duckduckgo_search
 requests
-opencv-python
+opencv-python-headless
+pillow>=12.0.0
