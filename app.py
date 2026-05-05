@@ -3,6 +3,7 @@ import os, requests, time, random
 from pathlib import Path
 from moviepy.editor import ImageClip, VideoFileClip, AudioFileClip, concatenate_videoclips, vfx
 from duckduckgo_search import DDGS
+from streamlit_sortables import sort_items
 
 # --- 1. SETTINGS & THEME ---
 st.set_page_config(page_title="TITAN AI STUDIO", layout="wide", initial_sidebar_state="expanded")
@@ -223,6 +224,26 @@ elif st.session_state.mode == "Editor":
         st.metric("Audio Loaded", "Yes" if st.session_state.audio_path else "No")
 
     if st.session_state.timeline:
+        st.subheader("🧩 Timeline Reorder")
+        reorder_items = [
+            f"{clip['id']}|{clip['type']}|{Path(clip['url']).name}"
+            for clip in st.session_state.timeline
+        ]
+        sorted_items = sort_items(
+            reorder_items,
+            header="Drag clips to reorder the timeline",
+            direction="vertical",
+            custom_style=".sortable-item { padding: 12px; border-radius: 8px; background-color: #171f2f; color: #e6edf3; margin-bottom: 8px; border: 1px solid #444; } .sortable-item:hover { background-color: #2e3a56; } .sortable-component { background: transparent; }",
+            key="timeline_sorter"
+        )
+        if sorted_items != reorder_items:
+            clip_by_id = {str(clip['id']): clip for clip in st.session_state.timeline}
+            st.session_state.timeline = [
+                clip_by_id[item.split('|', 1)[0]]
+                for item in sorted_items
+                if item.split('|', 1)[0] in clip_by_id
+            ]
+
         st.subheader("🧩 Dedicated Timeline Board")
         rows = (len(st.session_state.timeline) + 3) // 4
         board = [st.columns(4) for _ in range(rows)]

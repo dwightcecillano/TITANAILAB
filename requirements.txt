@@ -1,4 +1,5 @@
 ﻿streamlit
+streamlit-sortables
 moviepy>=1.0.0
 duckduckgo_search
 requests

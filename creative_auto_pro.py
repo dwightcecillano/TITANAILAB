@@ -9,13 +9,19 @@ from urllib3.util.retry import Retry
 
 print("🛠️  Agent Team: Booting Studio & Securing Permissions...")
 
-!pip install moviepy streamlit duckduckgo-search --quiet
-!apt-get update -qq && apt-get install -y imagemagick -qq > /dev/null 2>&1
-!sed -i 's/rights="none" pattern="@\*"/rights="read|write" pattern="@\*"/g' /etc/ImageMagick-6/policy.xml
+# NOTE: This script is designed to run as a standalone Python file.
+# If dependencies are missing, install them with pip:
+# pip install moviepy duckduckgo-search requests
+try:
+    from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips, vfx
+    from moviepy.config import change_settings
+except ImportError as e:
+    raise RuntimeError("Missing required packages. Run: pip install moviepy duckduckgo-search requests") from e
 
-from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips, vfx
-from moviepy.config import change_settings
-from duckduckgo_search import DDGS
+try:
+    from duckduckgo_search import DDGS
+except ImportError as e:
+    raise RuntimeError("Missing required package duckduckgo-search") from e
 
 # Create persistent session with retry strategy
 def create_session_with_retries():
@@ -105,7 +111,11 @@ def show_audio_menu():
         else:
             print("❌ Invalid choice. Please enter 1-10.")
 
-change_settings({"IMAGEMAGICK_BINARY": "/usr/bin/convert"})
+try:
+    change_settings({"IMAGEMAGICK_BINARY": "/usr/bin/convert"})
+except Exception:
+    pass
+
 ASSETS_DIR = "production_assets"
 if os.path.exists(ASSETS_DIR): shutil.rmtree(ASSETS_DIR)
 os.makedirs(ASSETS_DIR)
