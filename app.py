@@ -2,6 +2,8 @@ import streamlit as st
 import os, requests, time, random
 from pathlib import Path
 from moviepy.editor import ImageClip, VideoFileClip, AudioFileClip, concatenate_videoclips, vfx
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from duckduckgo_search import DDGS
 from streamlit_sortables import sort_items
 
@@ -103,6 +105,38 @@ def render_waveform_preview(seed, length=24):
     bars = "▁▂▃▄▅▆▇█"
     rnd = random.Random(seed)
     return "".join(rnd.choice(bars) for _ in range(length))
+
+
+def create_retry_session(total=5, backoff_factor=1):
+    session = requests.Session()
+    retries = Retry(
+        total=total,
+        backoff_factor=backoff_factor,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET", "POST"]
+    )
+    adapter = HTTPAdapter(max_retries=retries)
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return session
+
+
+session = create_retry_session()
+
+
+def download_remote_file(url, dest_path, timeout=30, allow_content_type=None):
+    dest_path = Path(dest_path)
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    response = session.get(url, timeout=timeout)
+    response.raise_for_status()
+    if allow_content_type:
+        content_type = response.headers.get("Content-Type", "")
+        if allow_content_type not in content_type:
+            raise ValueError(f"Unexpected content type: {content_type}")
+    with open(dest_path, "wb") as f:
+        f.write(response.content)
+    return dest_path
+
 
 with st.container():
     col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 1])
@@ -316,14 +350,12 @@ elif st.session_state.mode == "Audio":
         if st.button("Load Selected Audio", use_container_width=True):
             audio_url = AUDIO_LIBRARY[choice]
             try:
-                r = requests.get(audio_url, timeout=30)
-                audio_path = Path("assets") / "bg.mp3"
-                with open(audio_path, "wb") as f:
-                    f.write(r.content)
+                audio_path = download_remote_file(audio_url, Path("assets") / "bg.mp3", allow_content_type="audio")
                 st.session_state.audio_path = str(audio_path)
                 st.success("Audio loaded successfully")
             except Exception as e:
-                st.error(f"Failed to load audio: {e}")
+                st.session_state.audio_path = None
+                st.error(f"Failed to load audio: {type(e).__name__}: {e}")
     with col2:
         st.markdown("**Upload Your Own Audio**")
         uploaded_audio = st.file_uploader("Upload MP3/WAV audio", type=["mp3", "wav", "m4a"])
@@ -358,15 +390,23 @@ elif st.session_state.mode == "Export":
                 for idx, clip in enumerate(st.session_state.timeline):
                     if clip['type'] == 'image':
                         if clip['url'].startswith('http'):
-                            response = requests.get(clip['url'], timeout=30)
-                            frame_path = Path("assets") / f"frame_{idx}.jpg"
-                            with open(frame_path, "wb") as f:
-                                f.write(response.content)
+                            try:
+                                frame_path = download_remote_file(clip['url'], Path("assets") / f"frame_{idx}.jpg", allow_content_type="image")
+                            except Exception as e:
+                                st.error(f"Failed to download image clip #{idx}: {type(e).__name__}: {e}")
+                                continue
                         else:
                             frame_path = Path(clip['url'])
+                        if not frame_path.exists():
+                            st.error(f"Image clip not found: {frame_path}")
+                            continue
                         clip_obj = ImageClip(str(frame_path)).set_duration(clip['duration'])
                     else:
-                        clip_obj = VideoFileClip(str(clip['url']))
+                        try:
+                            clip_obj = VideoFileClip(str(clip['url']))
+                        except Exception as e:
+                            st.error(f"Failed to read video clip {clip['url']}: {type(e).__name__}: {e}")
+                            continue
                         if clip['duration'] > 0:
                             clip_obj = clip_obj.subclip(0, min(clip['duration'], clip_obj.duration))
                     if clip['speed'] != 1.0:
@@ -374,10 +414,21 @@ elif st.session_state.mode == "Export":
                     clip_obj = clip_obj.set_fps(24).crossfadein(0.3)
                     final_clips.append(clip_obj)
 
+                if not final_clips:
+                    st.error("Unable to render video: no valid clips were available.")
+                    st.stop()
+
                 final_video = concatenate_videoclips(final_clips, method="compose")
                 if st.session_state.audio_path:
-                    audio_clip = AudioFileClip(st.session_state.audio_path).set_duration(final_video.duration)
-                    final_video = final_video.set_audio(audio_clip)
+                    audio_file_path = Path(st.session_state.audio_path)
+                    if audio_file_path.exists():
+                        try:
+                            audio_clip = AudioFileClip(str(audio_file_path)).set_duration(final_video.duration)
+                            final_video = final_video.set_audio(audio_clip)
+                        except Exception as e:
+                            st.error(f"Unable to load audio for final render: {type(e).__name__}: {e}")
+                    else:
+                        st.warning("Audio file not found, rendering without audio.")
                 final_video.write_videofile(str(output_path), fps=24, codec="libx264", audio_codec="aac")
                 st.success("Rendering complete!")
                 st.video(str(output_path))
