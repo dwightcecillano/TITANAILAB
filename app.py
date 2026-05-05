@@ -1,5 +1,5 @@
 import streamlit as st
-import os, requests, time
+import os, requests, time, random
 from pathlib import Path
 from moviepy.editor import ImageClip, VideoFileClip, AudioFileClip, concatenate_videoclips, vfx
 from duckduckgo_search import DDGS
@@ -96,6 +96,12 @@ def scrape_web_data(query):
     except Exception as e:
         st.warning(f"⚠️ Unable to fetch assets for '{query}'. Try again later. Error: {type(e).__name__}")
     return results
+
+
+def render_waveform_preview(seed, length=24):
+    bars = "▁▂▃▄▅▆▇█"
+    rnd = random.Random(seed)
+    return "".join(rnd.choice(bars) for _ in range(length))
 
 with st.container():
     col1, col2, col3, col4, col5 = st.columns([2, 1, 1, 1, 1])
@@ -217,7 +223,32 @@ elif st.session_state.mode == "Editor":
         st.metric("Audio Loaded", "Yes" if st.session_state.audio_path else "No")
 
     if st.session_state.timeline:
-        st.subheader("🎞️ Timeline Clips")
+        st.subheader("🧩 Dedicated Timeline Board")
+        rows = (len(st.session_state.timeline) + 3) // 4
+        board = [st.columns(4) for _ in range(rows)]
+        for idx, clip in enumerate(st.session_state.timeline):
+            col = board[idx // 4][idx % 4]
+            with col:
+                st.markdown(f"**☰ Clip {idx + 1}**")
+                if clip['type'] == 'image':
+                    try:
+                        st.image(clip['url'], use_column_width=True)
+                    except:
+                        st.write("Preview unavailable")
+                else:
+                    st.write(f"🎬 {Path(clip['url']).name}")
+                st.markdown(f"**Duration:** {clip['duration']}s  |  **Speed:** {clip['speed']}x")
+                waveform = render_waveform_preview(clip['id'] * int(clip['duration'] * 10 + 1))
+                st.markdown(f"`{waveform}`")
+                if st.button("⬆️", key=f"up_card_{clip['id']}", use_container_width=True) and idx > 0:
+                    st.session_state.timeline[idx - 1], st.session_state.timeline[idx] = st.session_state.timeline[idx], st.session_state.timeline[idx - 1]
+                    st.experimental_rerun()
+                if st.button("⬇️", key=f"down_card_{clip['id']}", use_container_width=True) and idx < len(st.session_state.timeline) - 1:
+                    st.session_state.timeline[idx + 1], st.session_state.timeline[idx] = st.session_state.timeline[idx], st.session_state.timeline[idx + 1]
+                    st.experimental_rerun()
+
+        st.divider()
+        st.subheader("🎞️ Clip Controls")
         for i, clip in enumerate(st.session_state.timeline):
             with st.container():
                 st.markdown(f"<div class='timeline-clip'>", unsafe_allow_html=True)
@@ -239,11 +270,13 @@ elif st.session_state.mode == "Editor":
                         f"Speed", 0.25, 2.0, float(clip['speed']), step=0.25, key=f"speed_{clip['id']}"
                     )
                     st.write(f"Duration after speed: {clip['duration'] / clip['speed']:.1f}s")
+                    waveform = render_waveform_preview(clip['id'] * int(clip['duration'] * 10 + 1), length=32)
+                    st.markdown(f"`{waveform}`")
                 with cols[2]:
-                    if st.button("⬆️", key=f"move_up_{clip['id']}", use_container_width=True) and i > 0:
+                    if st.button("⬆️ Move Up", key=f"move_up_{clip['id']}", use_container_width=True) and i > 0:
                         st.session_state.timeline[i-1], st.session_state.timeline[i] = st.session_state.timeline[i], st.session_state.timeline[i-1]
                         st.experimental_rerun()
-                    if st.button("⬇️", key=f"move_down_{clip['id']}", use_container_width=True) and i < len(st.session_state.timeline) - 1:
+                    if st.button("⬇️ Move Down", key=f"move_down_{clip['id']}", use_container_width=True) and i < len(st.session_state.timeline) - 1:
                         st.session_state.timeline[i+1], st.session_state.timeline[i] = st.session_state.timeline[i], st.session_state.timeline[i+1]
                         st.experimental_rerun()
                     if st.button("🗑️ Delete", key=f"delete_{clip['id']}", use_container_width=True):
@@ -282,6 +315,9 @@ elif st.session_state.mode == "Audio":
     if st.session_state.audio_path:
         st.audio(st.session_state.audio_path)
         st.write(f"Current audio: {st.session_state.audio_path}")
+        st.write("**Audio Waveform Preview**")
+        waveform = render_waveform_preview(sum(ord(c) for c in st.session_state.audio_path), length=64)
+        st.markdown(f"`{waveform}`")
 
 elif st.session_state.mode == "Export":
     st.subheader("🚀 Export Production")
@@ -326,16 +362,3 @@ elif st.session_state.mode == "Export":
                 st.video(str(output_path))
                 with open(output_path, "rb") as f:
                     st.download_button("Download Final Video", f, file_name=output_path.name, use_container_width=True)
-                
-                final_video = concatenate_videoclips(final_clips, method="compose")
-                
-                if st.session_state.audio_path:
-                    audio = AudioFileClip(st.session_state.audio_path).set_duration(final_video.duration)
-                    final_video = final_video.set_audio(audio)
-                
-                out_path = f"exports/Final_Ad_{int(time.time())}.mp4"
-                final_video.write_videofile(out_path, fps=24, codec="libx264", audio_codec="aac")
-                
-                st.video(out_path)
-                with open(out_path, "rb") as f:
-                    st.download_button("💾 Download Video", f, file_name="Ad_Export.mp4")
