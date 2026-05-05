@@ -5,6 +5,7 @@ from moviepy.editor import ImageClip, VideoFileClip, AudioFileClip, concatenate_
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from duckduckgo_search import DDGS
+from duckduckgo_search.exceptions import RatelimitException
 from streamlit_sortables import sort_items
 
 # --- 1. SETTINGS & THEME ---
@@ -71,15 +72,22 @@ CONTENT_CATEGORIES = {
 
 AUDIO_LIBRARY = {
     "SoundHelix - Uplifting Corporate": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    "Bensound - Corporate Piano": "https://www.bensound.com/bensound-music/bensound-corporate.mp3",
-    "Bensound - Happy (Upbeat)": "https://www.bensound.com/bensound-music/bensound-happy.mp3",
-    "Bensound - Ukulele (Relaxed)": "https://www.bensound.com/bensound-music/bensound-ukulele.mp3",
-    "Bensound - Sunny Day (Energetic)": "https://www.bensound.com/bensound-music/bensound-sunny.mp3",
-    "Bensound - Sci-Fi (Modern)": "https://www.bensound.com/bensound-music/bensound-scifi.mp3",
     "Incompetech - Advancing Technology": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Advancing%20Technology.mp3",
     "Incompetech - Elite Success": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Elite%20Success.mp3",
-    "Pixabay - Corporate Success": "https://cdn.pixabay.com/download/audio/2022/03/10/audio_0475db1ecd.mp3"
+    "Pixabay - Corporate Success": "https://cdn.pixabay.com/download/audio/2022/03/10/audio_0475db1ecd.mp3",
+    "Pixabay - Upbeat Business": "https://cdn.pixabay.com/download/audio/2022/10/27/audio_0d4ad7dc5e.mp3"
 }
+
+
+def generate_placeholder_results(query, count=4):
+    return [
+        {
+            "url": f"https://picsum.photos/seed/{query.replace(' ', '_')}_{i}/1280/720",
+            "prompt": f"Placeholder for {query}",
+            "type": "placeholder"
+        }
+        for i in range(count)
+    ]
 
 
 def scrape_web_data(query):
@@ -96,8 +104,14 @@ def scrape_web_data(query):
                         "type": "scraped"
                     })
                     time.sleep(0.3)
+            if not results:
+                results = generate_placeholder_results(query, count=4)
+    except RatelimitException as e:
+        st.warning(f"⚠️ Rate limit reached while fetching assets for '{query}'. Using placeholder images instead.")
+        results = generate_placeholder_results(query, count=4)
     except Exception as e:
         st.warning(f"⚠️ Unable to fetch assets for '{query}'. Try again later. Error: {type(e).__name__}")
+        results = generate_placeholder_results(query, count=4)
     return results
 
 
@@ -109,6 +123,11 @@ def render_waveform_preview(seed, length=24):
 
 def create_retry_session(total=5, backoff_factor=1):
     session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9"
+    })
     retries = Retry(
         total=total,
         backoff_factor=backoff_factor,
