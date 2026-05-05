@@ -31,6 +31,80 @@ def create_session_with_retries():
     session.mount("https://", adapter)
     return session
 
+# FREE AUDIO LIBRARY - Curated royalty-free tracks
+FREE_AUDIO_TRACKS = {
+    "1": {
+        "name": "🎵 SoundHelix - Uplifting Corporate",
+        "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+        "duration": "23s"
+    },
+    "2": {
+        "name": "🎶 Bensound - Corporate Piano",
+        "url": "https://www.bensound.com/bensound-music/bensound-corporate.mp3",
+        "duration": "15s"
+    },
+    "3": {
+        "name": "🎼 Bensound - Happy (Upbeat)",
+        "url": "https://www.bensound.com/bensound-music/bensound-happy.mp3",
+        "duration": "15s"
+    },
+    "4": {
+        "name": "🎹 Bensound - Ukulele (Relaxed)",
+        "url": "https://www.bensound.com/bensound-music/bensound-ukulele.mp3",
+        "duration": "16s"
+    },
+    "5": {
+        "name": "✨ Bensound - Sunny Day (Energetic)",
+        "url": "https://www.bensound.com/bensound-music/bensound-sunny.mp3",
+        "duration": "19s"
+    },
+    "6": {
+        "name": "🚀 Bensound - Sci-Fi (Modern)",
+        "url": "https://www.bensound.com/bensound-music/bensound-scifi.mp3",
+        "duration": "15s"
+    },
+    "7": {
+        "name": "🎯 Incompetech - Advancing Technology",
+        "url": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Advancing%20Technology.mp3",
+        "duration": "120s"
+    },
+    "8": {
+        "name": "💎 Incompetech - Elite Success",
+        "url": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Elite%20Success.mp3",
+        "duration": "168s"
+    },
+    "9": {
+        "name": "🌟 Freepd - Ambient (Minimalist)",
+        "url": "https://files.freepd.com/music/Ambient%20Background.mp3",
+        "duration": "180s"
+    },
+    "10": {
+        "name": "🎬 Pixabay - Corporate Success",
+        "url": "https://cdn.pixabay.com/download/audio/2022/03/10/audio_0475db1ecd.mp3",
+        "duration": "112s"
+    },
+}
+
+def show_audio_menu():
+    """Display free audio options and get user selection."""
+    print("\n" + "="*60)
+    print("🎵 FREE AUDIO LIBRARY - Choose Background Music")
+    print("="*60)
+    for key, track in FREE_AUDIO_TRACKS.items():
+        print(f"{key}. {track['name']} ({track['duration']})")
+    print("="*60)
+    
+    while True:
+        choice = input("\nSelect audio (1-10) or press Enter for default [1]: ").strip()
+        if choice == "":
+            choice = "1"
+        if choice in FREE_AUDIO_TRACKS:
+            selected = FREE_AUDIO_TRACKS[choice]
+            print(f"\n✓ Selected: {selected['name']}")
+            return selected["url"]
+        else:
+            print("❌ Invalid choice. Please enter 1-10.")
+
 change_settings({"IMAGEMAGICK_BINARY": "/usr/bin/convert"})
 ASSETS_DIR = "production_assets"
 if os.path.exists(ASSETS_DIR): shutil.rmtree(ASSETS_DIR)
@@ -126,7 +200,7 @@ class AdProductionTeam:
     def agent_sfx_engineer(self):
         """AGENT 4: Audio Engineering - Sourcing high-quality score."""
         print("🎵 [SFX Engineer]: Selecting professional background score...")
-        audio_url = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+        audio_url = show_audio_menu()
         
         max_retries = 5
         retry_count = 0
