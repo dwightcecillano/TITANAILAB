@@ -4,8 +4,6 @@ from pathlib import Path
 from moviepy.editor import ImageClip, VideoFileClip, AudioFileClip, concatenate_videoclips, vfx
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from duckduckgo_search import DDGS
-from duckduckgo_search.exceptions import RatelimitException
 from streamlit_sortables import sort_items
 
 # --- 1. SETTINGS & THEME ---
@@ -72,17 +70,17 @@ CONTENT_CATEGORIES = {
 
 AUDIO_LIBRARY = {
     "SoundHelix - Uplifting Corporate": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-    "Incompetech - Advancing Technology": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Advancing%20Technology.mp3",
-    "Incompetech - Elite Success": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Elite%20Success.mp3",
-    "Pixabay - Corporate Success": "https://cdn.pixabay.com/download/audio/2022/03/10/audio_0475db1ecd.mp3",
-    "Pixabay - Upbeat Business": "https://cdn.pixabay.com/download/audio/2022/10/27/audio_0d4ad7dc5e.mp3"
+    "SoundHelix - Ambient Corporate": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    "SoundHelix - Energetic Groove": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    "SoundHelix - Motivational Pop": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"
 }
 
 
 def generate_placeholder_results(query, count=4):
+    safe_query = query.replace(' ', '_').replace('/', '_')
     return [
         {
-            "url": f"https://picsum.photos/seed/{query.replace(' ', '_')}_{i}/1280/720",
+            "url": f"https://picsum.photos/seed/{safe_query}_{i}/1024/576",
             "prompt": f"Placeholder for {query}",
             "type": "placeholder"
         }
@@ -91,28 +89,7 @@ def generate_placeholder_results(query, count=4):
 
 
 def scrape_web_data(query):
-    results = []
-    try:
-        with DDGS() as ddgs:
-            time.sleep(1)
-            images = list(ddgs.images(query, max_results=8))
-            for img in images:
-                if img.get('image'):
-                    results.append({
-                        "url": img['image'],
-                        "prompt": query,
-                        "type": "scraped"
-                    })
-                    time.sleep(0.3)
-            if not results:
-                results = generate_placeholder_results(query, count=4)
-    except RatelimitException as e:
-        st.warning(f"⚠️ Rate limit reached while fetching assets for '{query}'. Using placeholder images instead.")
-        results = generate_placeholder_results(query, count=4)
-    except Exception as e:
-        st.warning(f"⚠️ Unable to fetch assets for '{query}'. Try again later. Error: {type(e).__name__}")
-        results = generate_placeholder_results(query, count=4)
-    return results
+    return generate_placeholder_results(query, count=4)
 
 
 def render_waveform_preview(seed, length=24):
@@ -198,8 +175,9 @@ if st.session_state.mode == "Assets":
                 f"Modern {topic} brand identity shot"
             ]
             for prompt in prompts:
+                safe_prompt = prompt.replace(' ', '_').replace('/', '_')
                 st.session_state.ai_results.append({
-                    "url": f"https://image.pollinations.ai/prompt/{prompt.replace(' ', '%20')}?width=1920&height=1080&nologo=true",
+                    "url": f"https://picsum.photos/seed/ai_{safe_prompt}/1024/576",
                     "prompt": prompt,
                     "type": "ai"
                 })
