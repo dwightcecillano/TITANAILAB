@@ -199,7 +199,6 @@ if st.session_state.mode == "Assets":
                         "type": "image"
                     })
                     st.success("Added to timeline")
-                    st.experimental_rerun()
 
     if st.session_state.ai_results:
         st.subheader("🤖 AI Generated Scenes")
@@ -218,7 +217,6 @@ if st.session_state.mode == "Assets":
                         "type": "image"
                     })
                     st.success("Added AI scene to timeline")
-                    st.experimental_rerun()
 
 elif st.session_state.mode == "Editor":
     st.subheader("✂️ CapCut-Style Editor")
@@ -246,7 +244,6 @@ elif st.session_state.mode == "Editor":
                     "type": clip_type
                 })
             st.success("Uploaded clips added to the editor.")
-            st.experimental_rerun()
 
     with info_col:
         total_duration = sum(clip['duration'] / clip['speed'] for clip in st.session_state.timeline) if st.session_state.timeline else 0
