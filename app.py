@@ -8,6 +8,7 @@ from streamlit_sortables import sort_items
 
 # --- 1. SETTINGS & THEME ---
 st.set_page_config(page_title="TITAN AI STUDIO", layout="wide", initial_sidebar_state="expanded")
+st.set_option("server.maxUploadSize", 10240)
 
 st.markdown("""
     <style>
@@ -39,32 +40,32 @@ if 'ai_results' not in st.session_state:
 
 CONTENT_CATEGORIES = {
     "Luxury Real Estate": [
-        "luxury home exterior",
-        "modern high-end kitchen",
-        "luxury living room interior",
-        "professional real estate agent handshake",
-        "sunset city skyline branding"
+        "luxury mansion exterior with landscaped gardens",
+        "high-end modern house interior in a luxury villa",
+        "grand foyer of an upscale real estate property",
+        "resort-style pool area at a luxury estate",
+        "beautiful sunset view over a premium real estate neighborhood"
     ],
     "Tech & Innovation": [
-        "tech startup office",
-        "AI technology visualization",
-        "modern digital workspace",
-        "software team collaboration",
-        "futuristic innovation lab"
+        "tech startup office with creative team collaboration",
+        "AI technology illustration with futuristic interface",
+        "modern digital workspace with product design",
+        "software developers coding in a bright office",
+        "innovation lab with smart devices and robotics"
     ],
     "Corporate Business": [
-        "corporate office meeting",
-        "business executive presentation",
-        "professional teamwork",
-        "company growth concept",
-        "office branding lifestyle"
+        "executive meeting in a polished corporate boardroom",
+        "business presentation with graphs and strategy",
+        "professional team brainstorming in a modern office",
+        "corporate branding image with confident leaders",
+        "office culture with professionals networking"
     ],
     "Lifestyle & Travel": [
-        "luxury travel destination",
-        "premium lifestyle photoshoot",
-        "vacation resort interior",
-        "high-end fashion lifestyle",
-        "travel adventure film"
+        "luxury beachfront resort with serene ocean views",
+        "glamorous travel lifestyle scene at a rooftop bar",
+        "adventure travel through scenic mountain landscapes",
+        "city exploration with premium hotel and dining",
+        "wellness retreat with spa and luxury travel amenities"
     ]
 }
 
@@ -72,7 +73,9 @@ AUDIO_LIBRARY = {
     "SoundHelix - Uplifting Corporate": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
     "SoundHelix - Ambient Corporate": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
     "SoundHelix - Energetic Groove": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
-    "SoundHelix - Motivational Pop": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"
+    "SoundHelix - Motivational Pop": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+    "SoundHelix - Chill Background": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+    "SoundHelix - Inspiring Piano": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"
 }
 
 
@@ -360,11 +363,15 @@ elif st.session_state.mode == "Audio":
             st.session_state.audio_path = str(audio_path)
             st.success(f"Loaded {uploaded_audio.name}")
     if st.session_state.audio_path:
-        st.audio(st.session_state.audio_path)
-        st.write(f"Current audio: {st.session_state.audio_path}")
-        st.write("**Audio Waveform Preview**")
-        waveform = render_waveform_preview(sum(ord(c) for c in st.session_state.audio_path), length=64)
-        st.markdown(f"`{waveform}`")
+        try:
+            st.audio(st.session_state.audio_path)
+            st.write(f"Current audio: {st.session_state.audio_path}")
+            st.write("**Audio Waveform Preview**")
+            waveform = render_waveform_preview(sum(ord(c) for c in st.session_state.audio_path), length=64)
+            st.markdown(f"`{waveform}`")
+        except Exception as e:
+            st.error(f"Unable to preview audio file: {type(e).__name__}: {e}")
+            st.session_state.audio_path = None
 
 elif st.session_state.mode == "Export":
     st.subheader("🚀 Export Production")
