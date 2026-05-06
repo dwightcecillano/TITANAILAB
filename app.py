@@ -8,7 +8,10 @@ from streamlit_sortables import sort_items
 
 # --- 1. SETTINGS & THEME ---
 st.set_page_config(page_title="TITAN AI STUDIO", layout="wide", initial_sidebar_state="expanded")
-st.set_option("server.maxUploadSize", 10240)
+
+# Note: Streamlit upload size must be configured via a config file or environment variable,
+# not via st.set_option at runtime in hosted environments.
+# Example local config: .streamlit/config.toml with server.maxUploadSize = 10240
 
 st.markdown("""
     <style>

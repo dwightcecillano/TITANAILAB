@@ -1,0 +1,3 @@
+# Streamlit app configuration
+# Set upload limit to 10 GB for video uploads.
+server.maxUploadSize = 10240
